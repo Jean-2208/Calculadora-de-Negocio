@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora Mi Negocio</title>
+  <style>
+    /* --- PALETA DE COLORES --- */
+    :root {
+      --bg: #0f0f14; --bg2: #16161e; --sidebar-bg: #0a0a10; --side-card: #1a1a26;
+      --border-def: #323246; --accent-purp: #8b5cf6; --accent-ind: #4f46e5;
+      --text-pri: #ebebf5; --text-mut: #787891; --btn-bg: #20202d; --btn-fg: #bebed2;
+      --btn-bor: #373750; --sel-pl-bg: #2563eb; --sel-gs-bg: #6d28d9;
+      --sel-ex-bg: #0e7490; --sel-bb-bg: #581c87;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-pri); display: flex; height: 100vh; overflow: hidden; }
+
+    /* --- ESTRUCTURA PRINCIPAL --- */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 20px; }
+    .sidebar { width: 300px; background-color: var(--sidebar-bg); border-left: 1px solid var(--border-def); display: flex; flex-direction: column; }
+
+    /* --- SECCIONES Y BOTONES --- */
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 14px; font-weight: bold; color: #a0a0be; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .section-title::before { content: ""; display: inline-block; width: 4px; height: 16px; background-color: var(--accent-purp); }
+    .hint { font-size: 12px; color: var(--text-mut); margin-bottom: 10px; }
+
+    .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn { background: var(--btn-bg); color: var(--btn-fg); border: 1px solid var(--btn-bor); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+    .btn:hover { border-color: var(--text-mut); }
+
+    .btn.active-pl { background: var(--sel-pl-bg); color: white; border-color: #60a5fa; font-weight: bold; }
+    .btn.active-gs { background: var(--sel-gs-bg); color: white; border-color: #a78bfa; font-weight: bold; }
+    .btn.active-ex { background: var(--sel-ex-bg); color: white; border-color: #22d3ee; font-weight: bold; }
+    .btn.active-bb { background: var(--sel-bb-bg); color: white; border-color: #c084fc; font-weight: bold; }
+    hr { border: none; border-top: 1px solid var(--border-def); margin: 20px 0; }
+
+    /* --- FOOTER DE PRECIO --- */
+    .bottom-bar { background: #0c0c12; border-top: 1px solid var(--border-def); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+    .price-box { border: 2px solid var(--accent-ind); background: #14142a; padding: 10px 20px; border-radius: 6px; }
+    .price-label { font-size: 12px; color: #94a3dc; }
+    .price-value { font-size: 28px; font-weight: bold; color: #a78bfa; }
+    .btn-add { background: var(--accent-ind); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+    /* --- SIDEBAR --- */
+    .sb-header, .sb-footer { padding: 15px; background: #08080e; border-bottom: 1px solid var(--border-def); }
+    .sb-footer { border-bottom: none; border-top: 1px solid var(--border-def); margin-top: auto; }
+    .sb-body { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .cart-item { background: var(--side-card); border: 1px solid #373750; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .cart-item-details { display: flex; flex-direction: column; gap: 4px; }
+    .cart-item-title { font-size: 14px; font-weight: bold; }
+    .cart-item-desc { font-size: 11px; color: var(--text-mut); max-width: 180px; }
+    .cart-item-price { color: #818cf8; font-weight: bold; font-size: 14px; }
+    .btn-del { background: none; border: none; color: #f87171; cursor: pointer; font-weight: bold; }
+    .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .total-val { font-size: 24px; font-weight: bold; color: #a78bfa; }
+    .btn-save { background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 8px;}
+    .btn-clear { background: #28283a; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-bottom: 8px;}
+    .btn-corte { background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 15px;}
+
+    /* --- MODAL CORTE DE DIA --- */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+    .modal { background: var(--bg2); border: 1px solid var(--border-def); width: 600px; max-width: 90%; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; max-height: 85vh; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-header h2 { font-size: 18px; color: var(--text-pri); }
+    .btn-close { background: none; border: none; color: var(--text-mut); font-size: 20px; cursor: pointer; }
+    .historial-area { background: var(--bg); border: 1px solid var(--border-def); padding: 15px; border-radius: 4px; color: var(--text-pri); font-family: monospace; white-space: pre-wrap; overflow-y: auto; flex: 1; font-size: 13px;}
+    .metricas { font-weight: bold; margin-bottom: 10px; color: #a78bfa; }
+  </style>
+</head>
+<body>
+
+<div class="main-content">
+  <div class="section"><div class="section-title">1. PLATILLO</div><div class="btn-grid" id="grid-platillos"></div></div><hr>
+  <div class="section">
+    <div class="section-title">2. GUISADO</div>
+    <div class="hint" id="hint-text">Chicharron=$22 · 1 extra=$27 · 2 extras=$32 · Bistec+quesillo=$37 · Campechano=$42</div>
+    <div class="btn-grid" id="grid-guisados"></div>
+  </div><hr>
+  <div class="section"><div class="section-title">3. SALSA</div><div class="btn-grid" id="grid-salsas"></div></div><hr>
+  <div class="section">
+    <div class="section-title" style="justify-content: space-between;">
+      <span>4. EXTRAS (sin costo)</span>
+      <button class="btn" style="background:#0e7490; color:white; border:none; padding:4px 8px; font-size:11px;" onclick="agregarTodosExtras()">+ Agregar todo</button>
+    </div>
+    <div class="btn-grid" id="grid-extras"></div>
+  </div><hr>
+  <div class="section"><div class="section-title">5. BEBIDA</div><div class="btn-grid" id="grid-bebidas"></div></div>
+  <div style="flex:1"></div>
+  <div class="bottom-bar">
+    <div class="price-box"><div class="price-label">Precio del platillo</div><div class="price-value" id="lbl-precio">—</div></div>
+    <button class="btn-add" onclick="agregarItem()">+ Agregar al pedido</button>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="sb-header"><h3 style="font-size: 16px;">Pedido actual</h3><div class="hint" id="lbl-side-count" style="margin: 0;">Sin productos</div></div>
+  <div class="sb-body" id="sidebar-resumen"><div class="hint">Sin productos aun.</div></div>
+  <div class="sb-footer">
+    <div class="total-row"><span style="color: var(--text-mut); font-size: 13px;">Total</span><span class="total-val" id="lbl-side-total">$0.00</span></div>
+    <button class="btn-save" onclick="guardarVenta()">Guardar venta ></button>
+    <button class="btn-clear" onclick="limpiarPedido()">Limpiar pedido</button>
+    <hr style="margin: 10px 0;">
+    <button class="btn-corte" onclick="abrirModalCorte()">Ver Corte del Día 📊</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-corte">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Historial del Día</h2>
+      <button class="btn-close" onclick="cerrarModalCorte()">✖</button>
+    </div>
+    <div class="metricas" id="lbl-metricas">Ventas: 0 | Total: $0.00</div>
+    <div class="historial-area" id="area-historial">Sin ventas registradas.</div>
+    <button class="btn-corte" style="margin-top: 15px;" onclick="hacerCorte()">Hacer corte del dia</button>
+  </div>
+</div>
+
+<script>
+  const PLATILLOS = ["Tostada", "Sope", "Pambazo", "Gordita", "Quesadilla", "Taco", "Huarache"];
+  const GUISADOS  = ["Chicharron", "Tinga de pollo", "Requesón", "Pancita", "Picadillo", "Pata", "Huitlacoche", "Flor de calabaza", "Champiñones", "Tinga de carne", "Quesillo", "Bistec + quesillo", "Campechano"];
+  const SALSAS    = ["Salsa verde", "Salsa roja"];
+  const EXTRAS    = ["Queso rayado", "Cilantro", "Cebolla", "Crema", "Nopales", "Lechuga"];
+  const BEBIDAS   = ["Refresco  $27", "Jugo  $25"];
+
+  let state = {
+    selPlatillo: null, selGuisados: [], selSalsas: [], selExtras: [], selBebida: null, precBebida: 0,
+    itemsVenta: [], numVenta: 0, historial: [] // Agregamos el historial
+  };
+
+  function calcularPrecio(pl, gs) {
+    const esH = pl === "Huarache"; const esT = pl === "Taco";
+    const camp = gs.includes("Campechano"); const bist = gs.includes("Bistec + quesillo");
+    if (esH) { if (camp) return 82; if (bist) return 72; return 65 + (gs.length * 5); }
+    if (esT) { if (camp) return 47; if (bist) return 42; return 22; }
+    if (camp) return 42; if (bist) return 37;
+    const ex = gs.filter(g => g !== "Chicharron").length;
+    if (ex === 0) return 22; if (ex === 1) return 27; if (ex === 2) return 32;
+    return 22 + (ex * 5);
+  }
+
+  function onPlatillo(p) {
+    state.selPlatillo = (state.selPlatillo === p) ? null : p; state.selGuisados = [];
+    const hint = document.getElementById('hint-text');
+    if (state.selPlatillo === "Huarache") hint.innerText = "Base $65 + $5 c/guisado · Bistec=$72 · Campechano=$82";
+    else if (state.selPlatillo === "Taco") hint.innerText = "Sencillo=$22 · Bistec=$42 · Campechano=$47";
+    else hint.innerText = "Chicharron=$22 · 1 extra=$27 · 2 extras=$32 · Bistec+quesillo=$37 · Campechano=$42";
+    actualizarUI();
+  }
+
+  function onGuisado(g) {
+    const esE = (g === "Campechano" || g === "Bistec + quesillo");
+    const hayE = state.selGuisados.some(x => x === "Campechano" || x === "Bistec + quesillo");
+    if (state.selGuisados.includes(g)) state.selGuisados = state.selGuisados.filter(x => x !== g);
+    else {
+      if (hayE && !esE) return;
+      if (esE) state.selGuisados = [];
+      else {
+        const n = state.selGuisados.filter(x => x !== "Campechano" && x !== "Bistec + quesillo").length;
+        if (state.selPlatillo !== "Huarache" && n >= 2) { alert("Maximo 2 guisados extra."); return; }
+      }
+      state.selGuisados.push(g);
+    }
+    actualizarUI();
+  }
+
+  function onSalsa(s) { if (state.selSalsas.includes(s)) state.selSalsas = state.selSalsas.filter(x => x !== s); else state.selSalsas.push(s); actualizarUI(); }
+  function onExtra(e) { if (state.selExtras.includes(e)) state.selExtras = state.selExtras.filter(x => x !== e); else state.selExtras.push(e); actualizarUI(); }
+  function agregarTodosExtras() { EXTRAS.forEach(ex => { if (!state.selExtras.includes(ex)) state.selExtras.push(ex); }); actualizarUI(); }
+  function onBebida(b) { if (state.selBebida === b) { state.selBebida = null; state.precBebida = 0; } else { state.selBebida = b; state.precBebida = b.includes("27") ? 27 : 25; } actualizarUI(); }
+
+  function actualizarUI() {
+    renderGrid('grid-platillos', PLATILLOS, state.selPlatillo, (i) => state.selPlatillo === i, onPlatillo, 'active-pl');
+    renderGrid('grid-guisados', GUISADOS, null, (i) => state.selGuisados.includes(i), onGuisado, 'active-gs');
+    renderGrid('grid-salsas', SALSAS, null, (i) => state.selSalsas.includes(i), onSalsa, 'active-gs');
+    renderGrid('grid-extras', EXTRAS, null, (i) => state.selExtras.includes(i), onExtra, 'active-ex');
+    renderGrid('grid-bebidas', BEBIDAS, null, (i) => state.selBebida === i, onBebida, 'active-bb');
+    const lbl = document.getElementById('lbl-precio');
+    if (!state.selPlatillo || state.selGuisados.length === 0) lbl.innerText = "—";
+    else lbl.innerText = `$${(calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida).toFixed(2)}`;
+  }
+
+  function renderGrid(containerId, items, selSingle, selCheckFunc, clickHandler, activeClass) {
+    const container = document.getElementById(containerId); container.innerHTML = '';
+    items.forEach(item => {
+      const btn = document.createElement('button'); btn.className = `btn ${selCheckFunc(item) ? activeClass : ''}`;
+      btn.innerText = item; btn.onclick = () => clickHandler(item); container.appendChild(btn);
+    });
+  }
+
+  function agregarItem() {
+    if (!state.selPlatillo || state.selGuisados.length === 0) { alert("Selecciona platillo y al menos un guisado."); return; }
+    let partes = [state.selGuisados.join(" + ")];
+    if (state.selSalsas.length > 0) partes.push("Salsa: " + state.selSalsas.join(" y "));
+    if (state.selExtras.length > 0) partes.push(state.selExtras.join(", "));
+    if (state.selBebida) partes.push(state.selBebida.trim());
+    state.itemsVenta.push({ nombre: state.selPlatillo, desc: partes.join(" · "), precio: calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida });
+    state.selPlatillo = null; state.selGuisados = []; state.selSalsas = []; state.selExtras = []; state.selBebida = null; state.precBebida = 0;
+    document.getElementById('hint-text').innerText = "Chicharron=$22 · 1 extra=$27 · 2 extras=$32 · Bistec+quesillo=$37 · Campechano=$42";
+    actualizarUI(); renderSidebar();
+  }
+
+  function eliminarItem(index) { state.itemsVenta.splice(index, 1); renderSidebar(); }
+  function limpiarPedido() { if(state.itemsVenta.length > 0 && confirm("¿Limpiar pedido actual?")) { state.itemsVenta = []; renderSidebar(); } }
+
+  function renderSidebar() {
+    const container = document.getElementById('sidebar-resumen'); container.innerHTML = ''; let total = 0;
+    if (state.itemsVenta.length === 0) {
+      container.innerHTML = '<div class="hint">Sin productos aun.</div>'; document.getElementById('lbl-side-count').innerText = "Sin productos";
+    } else {
+      state.itemsVenta.forEach((item, index) => {
+        total += item.precio; const el = document.createElement('div'); el.className = 'cart-item';
+        el.innerHTML = `<div class="cart-item-details"><span class="cart-item-title">${item.nombre}</span><span class="cart-item-desc">${item.desc.length>35?item.desc.substring(0,32)+"...":item.desc}</span></div>
+                                    <div style="display:flex;flex-direction:column;align-items:flex-end;"><span class="cart-item-price">$${item.precio.toFixed(2)}</span><button class="btn-del" onclick="eliminarItem(${index})">X</button></div>`;
+        container.appendChild(el);
+      });
+      document.getElementById('lbl-side-count').innerText = state.itemsVenta.length + (state.itemsVenta.length === 1 ? " producto" : " productos");
+    }
+    document.getElementById('lbl-side-total').innerText = `$${total.toFixed(2)}`;
+  }
+
+  // --- NUEVA LÓGICA DE HISTORIAL Y CORTE ---
+  function guardarVenta() {
+    if (state.itemsVenta.length === 0) { alert("Agrega al menos un producto."); return; }
+    const total = state.itemsVenta.reduce((acc, item) => acc + item.precio, 0);
+    state.numVenta++;
+
+    // Construir texto para el historial (igual que en Java)
+    let textoVenta = `---- Cliente #${state.numVenta}  -----------------  $${total.toFixed(2)}\n`;
+    state.itemsVenta.forEach(it => {
+      textoVenta += `   * ${it.nombre}  -  ${it.desc}   ($${it.precio.toFixed(2)})\n`;
+    });
+
+    state.historial.push({ num: state.numVenta, texto: textoVenta, total: total });
+    alert(`Venta #${state.numVenta} guardada con éxito!\nTotal cobrado: $${total.toFixed(2)}`);
+
+    state.itemsVenta = []; renderSidebar();
+  }
+
+  function abrirModalCorte() {
+    document.getElementById('modal-corte').style.display = 'flex';
+    const area = document.getElementById('area-historial');
+    const metricas = document.getElementById('lbl-metricas');
+
+    if (state.historial.length === 0) {
+      area.innerText = "Sin ventas registradas.";
+      metricas.innerText = "Ventas del dia: 0   |   Total acumulado: $0.00";
+    } else {
+      let textoFinal = "";
+      let totalDia = 0;
+      // Mostrar de más reciente a más antiguo
+      for (let i = state.historial.length - 1; i >= 0; i--) {
+        textoFinal += state.historial[i].texto + "\n";
+        totalDia += state.historial[i].total;
+      }
+      area.innerText = textoFinal;
+      metricas.innerText = `Ventas del dia: ${state.historial.length}   |   Total acumulado: $${totalDia.toFixed(2)}`;
+    }
+  }
+
+  function cerrarModalCorte() {
+    document.getElementById('modal-corte').style.display = 'none';
+  }
+
+  function hacerCorte() {
+    if (state.historial.length === 0) { alert("No hay ventas en el dia."); return; }
+    const totalDia = state.historial.reduce((acc, item) => acc + item.total, 0);
+
+    if (confirm(`Ventas: ${state.historial.length}\nTotal: $${totalDia.toFixed(2)}\n\n¿Cerrar el día y limpiar el registro?`)) {
+      state.historial = [];
+      state.numVenta = 0;
+      cerrarModalCorte();
+      alert("¡Corte de caja realizado con éxito!");
+    }
+  }
+
+  actualizarUI();
+</script>
+</body>
+</html>
