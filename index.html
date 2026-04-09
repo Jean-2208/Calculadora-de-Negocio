@@ -159,7 +159,7 @@
       if (esE) state.selGuisados = [];
       else {
         // Límites de tu Java: Taco/Quesadilla/etc = 1, Huarache = Infinito, Otros = 2
-        let limite = (state.selPlatillo === "Huarache") ? 99 : (["Taco", "Quesadilla", "Sope", "Pambazo", "Gordita"].includes(state.selPlatillo) ? 1 : 2);
+        let limite = (state.selPlatillo === "Huarache") ? 99 : (state.selPlatillo === "Taco" ? 1 : 2);
         if (state.selGuisados.length >= limite) {
           alert("Límite de guisados para " + state.selPlatillo + " alcanzado.");
           return;
