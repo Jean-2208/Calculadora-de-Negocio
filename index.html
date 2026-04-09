@@ -67,7 +67,7 @@
   <div class="section"><div class="section-title">1. PLATILLO</div><div class="btn-grid" id="grid-platillos"></div></div><hr>
   <div class="section">
     <div class="section-title">2. GUISADO</div>
-    <div class="hint" id="hint-text">Chicharron=$22 · 1 extra=$27 · 2 extras=$32 · Bistec+quesillo=$37 · Campechano=$42</div>
+    <div class="hint" id="hint-text">Sencillo (1 guisado) = $22 · Guisado extra = +$5 · Bistec+quesillo=$37 · Campechano=$42</div>
     <div class="btn-grid" id="grid-guisados"></div>
   </div><hr>
   <div class="section"><div class="section-title">3. SALSA</div><div class="btn-grid" id="grid-salsas"></div></div><hr>
@@ -142,7 +142,7 @@
     const hint = document.getElementById('hint-text');
     if (state.selPlatillo === "Huarache") hint.innerText = "Base $65 + $5 c/guisado · Bistec=$72 · Campechano=$82";
     else if (state.selPlatillo === "Taco") hint.innerText = "Sencillo=$22 · Bistec=$42 · Campechano=$47";
-    else hint.innerText = "Chicharron=$22 · 1 extra=$27 · 2 extras=$32 · Bistec+quesillo=$37 · Campechano=$42";
+    else hint.innerText = "Sencillo (1 guisado) = $22 · Guisado extra = +$5 · Bistec+quesillo=$37 · Campechano=$42";
 
     actualizarUI();
   }
