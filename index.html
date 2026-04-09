@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Calculadora Mi Negocio</title>
     <style>
         :root {
@@ -13,42 +13,41 @@
             --sel-ex-bg: #0e7490; --sel-bb-bg: #581c87;
         }
 
+        /* 1. ELIMINAR SCROLL GLOBAL */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         
-        /* Contenedor principal responsivo */
         body { 
             background-color: var(--bg); 
             color: var(--text-pri); 
             display: flex; 
-            flex-direction: row; /* Horizontal en PC */
-            height: 100vh; 
-            overflow: hidden; 
+            height: 100dvh; /* Ocupa exactamente el alto de la pantalla */
+            overflow: hidden; /* Evita que la página entera se mueva */
         }
 
-        /* Si la pantalla es pequeña (Celulares) */
-        @media (max-width: 850px) {
-            body { flex-direction: column; overflow-y: auto; height: auto; }
-            .sidebar { width: 100% !important; border-left: none !important; border-top: 2px solid var(--border-def); height: auto !important; }
-            .main-content { height: auto !important; overflow: visible !important; }
-            .sb-body { max-height: 400px; } /* Límite de scroll en móvil */
-        }
-
+        /* 2. SCROLL IZQUIERDO (MENU) */
         .main-content { 
-            flex: 1; 
+            flex: 1.6; /* Más ancho para el menú */
             display: flex; 
             flex-direction: column; 
-            overflow-y: auto; 
-            padding: 20px; 
-            height: 100vh;
+            overflow-y: auto; /* SCROLL 1 */
+            padding: 20px;
+            border-right: 1px solid var(--border-def);
         }
 
+        /* 3. SCROLL DERECHO (CARRITO) */
         .sidebar { 
-            width: 350px; 
+            flex: 1; 
             background-color: var(--sidebar-bg); 
-            border-left: 1px solid var(--border-def); 
             display: flex; 
             flex-direction: column; 
-            height: 100vh;
+            height: 100%; /* No se sale de la pantalla */
+        }
+
+        /* Ajuste para móviles y iPads verticales */
+        @media (max-width: 1000px) {
+            body { flex-direction: column; }
+            .main-content { flex: 1; border-right: none; border-bottom: 2px solid var(--border-def); }
+            .sidebar { flex: 0.8; }
         }
 
         .section { margin-bottom: 20px; }
@@ -57,63 +56,56 @@
         .hint { font-size: 12px; color: var(--text-mut); margin-bottom: 10px; }
         
         .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .btn { background: var(--btn-bg); color: var(--btn-fg); border: 1px solid var(--btn-bor); padding: 10px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn { background: var(--btn-bg); color: var(--btn-fg); border: 1px solid var(--btn-bor); padding: 12px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
         
-        .btn.active-pl { background: var(--sel-pl-bg); color: white; border-color: #60a5fa; font-weight: bold; }
-        .btn.active-gs { background: var(--sel-gs-bg); color: white; border-color: #a78bfa; font-weight: bold; }
-        .btn.active-ex { background: var(--sel-ex-bg); color: white; border-color: #22d3ee; font-weight: bold; }
-        .btn.active-bb { background: var(--sel-bb-bg); color: white; border-color: #c084fc; font-weight: bold; }
+        .btn.active-pl { background: var(--sel-pl-bg); color: white; border-color: #60a5fa; }
+        .btn.active-gs { background: var(--sel-gs-bg); color: white; border-color: #a78bfa; }
+        .btn.active-ex { background: var(--sel-ex-bg); color: white; border-color: #22d3ee; }
+        .btn.active-bb { background: var(--sel-bb-bg); color: white; border-color: #c084fc; }
         hr { border: none; border-top: 1px solid var(--border-def); margin: 20px 0; }
 
+        /* BARRA INFERIOR DEL MENU (Siempre visible al final del scroll 1) */
         .bottom-bar { 
             background: #0c0c12; 
-            border-top: 1px solid var(--border-def); 
+            border: 1px solid var(--border-def);
             padding: 15px; 
             display: flex; 
-            flex-wrap: wrap;
             gap: 10px;
-            justify-content: space-between; 
-            align-items: center; 
+            margin-top: auto; 
             position: sticky;
             bottom: 0;
+            border-radius: 8px;
         }
-        .price-box { border: 2px solid var(--accent-ind); background: #14142a; padding: 8px 15px; border-radius: 6px; flex-grow: 1; }
-        .price-label { font-size: 11px; color: #94a3dc; }
-        .price-value { font-size: 24px; font-weight: bold; color: #a78bfa; }
-        .btn-add { background: var(--accent-ind); color: white; border: none; padding: 12px 20px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; flex-grow: 1; }
+        .price-box { background: #14142a; padding: 8px 15px; border-radius: 6px; flex: 1; border: 1px solid var(--accent-ind); }
+        .price-value { font-size: 22px; font-weight: bold; color: #a78bfa; }
+        .btn-add { background: var(--accent-ind); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; flex: 1.2; }
 
-        /* SCROLL DEL PEDIDO ACTUAL */
-        .sb-header, .sb-footer { padding: 15px; background: #08080e; border-bottom: 1px solid var(--border-def); }
+        /* CUERPO DEL PEDIDO (Scroll 2) */
+        .sb-header { padding: 15px; background: #08080e; border-bottom: 1px solid var(--border-def); }
         .sb-body { 
             padding: 15px; 
             flex: 1; 
-            overflow-y: auto; /* ESTO HACE QUE EL PEDIDO SCROLLEE */
+            overflow-y: auto; /* SCROLL 2 */
             display: flex; 
             flex-direction: column; 
             gap: 10px; 
         }
 
-        /* Estilo del scrollbar para que se vea moderno */
-        .sb-body::-webkit-scrollbar { width: 6px; }
-        .sb-body::-webkit-scrollbar-thumb { background: var(--border-def); border-radius: 10px; }
-
-        .cart-item { background: var(--side-card); border: 1px solid #373750; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .cart-item-details { display: flex; flex-direction: column; gap: 4px; }
+        .cart-item { background: var(--side-card); border: 1px solid #373750; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
         .cart-item-title { font-size: 14px; font-weight: bold; }
-        .cart-item-desc { font-size: 11px; color: var(--text-mut); max-width: 180px; }
-        .cart-item-price { color: #818cf8; font-weight: bold; font-size: 14px; }
-        .btn-del { background: none; border: none; color: #f87171; cursor: pointer; font-weight: bold; padding: 5px; }
+        .cart-item-desc { font-size: 11px; color: var(--text-mut); margin-top: 4px; }
+        .cart-item-price { color: #818cf8; font-weight: bold; }
+        .btn-del { background: #2d1a1a; color: #f87171; border: 1px solid #452222; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
 
-        .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .total-val { font-size: 24px; font-weight: bold; color: #a78bfa; }
-        .btn-save { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 8px;}
-        .btn-clear { background: #28283a; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-bottom: 8px;}
-        .btn-corte { background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold;}
-
+        .sb-footer { padding: 15px; background: #08080e; border-top: 1px solid var(--border-def); }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .total-val { font-size: 26px; font-weight: bold; color: #a78bfa; }
+        .btn-action { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
+        
         /* MODAL */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
-        .modal { background: var(--bg2); border: 1px solid var(--border-def); width: 600px; max-width: 100%; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; max-height: 90vh; }
-        .historial-area { background: var(--bg); border: 1px solid var(--border-def); padding: 15px; border-radius: 4px; color: var(--text-pri); font-family: monospace; white-space: pre-wrap; overflow-y: auto; flex: 1; font-size: 13px; margin: 10px 0;}
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: var(--bg2); width: 600px; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; max-height: 90vh; }
+        .historial-area { background: var(--bg); padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; font-family: monospace; font-size: 13px; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -128,38 +120,36 @@
         <div class="section"><div class="section-title">3. SALSA</div><div class="btn-grid" id="grid-salsas"></div></div><hr>
         <div class="section">
             <div class="section-title" style="justify-content: space-between;">
-                <span>4. EXTRAS (sin costo)</span>
-                <button class="btn" style="background:#0e7490; color:white; border:none; padding:4px 8px; font-size:11px;" onclick="agregarTodosExtras()">+ Agregar todo</button>
+                <span>4. EXTRAS</span>
+                <button class="btn" style="padding:4px 8px; font-size:11px;" onclick="agregarTodosExtras()">+ Todo</button>
             </div>
             <div class="btn-grid" id="grid-extras"></div>
         </div><hr>
         <div class="section"><div class="section-title">5. BEBIDA</div><div class="btn-grid" id="grid-bebidas"></div></div>
         
         <div class="bottom-bar">
-            <div class="price-box"><div class="price-label">Precio del platillo</div><div class="price-value" id="lbl-precio">—</div></div>
-            <button class="btn-add" onclick="agregarItem()">+ Agregar al pedido</button>
+            <div class="price-box"><div class="price-value" id="lbl-precio">—</div></div>
+            <button class="btn-add" onclick="agregarItem()">+ AGREGAR</button>
         </div>
     </div>
 
     <div class="sidebar">
-        <div class="sb-header"><h3 style="font-size: 16px;">Pedido actual</h3><div class="hint" id="lbl-side-count" style="margin: 0;">Sin productos</div></div>
-        
+        <div class="sb-header"><h3>Pedido actual</h3><div id="lbl-side-count" style="font-size:12px; color:var(--text-mut)">0 productos</div></div>
         <div class="sb-body" id="sidebar-resumen"></div>
-        
         <div class="sb-footer">
-            <div class="total-row"><span style="color: var(--text-mut); font-size: 13px;">Total</span><span class="total-val" id="lbl-side-total">$0.00</span></div>
-            <button class="btn-save" onclick="guardarVenta()">Guardar venta ></button>
-            <button class="btn-clear" onclick="limpiarPedido()">Limpiar pedido</button>
-            <button class="btn-corte" onclick="abrirModalCorte()">Ver Corte del Día 📊</button>
+            <div class="total-row"><span>Total</span><span class="total-val" id="lbl-side-total">$0.00</span></div>
+            <button class="btn-action" style="background:#2563eb; color:white;" onclick="guardarVenta()">GUARDAR VENTA ></button>
+            <button class="btn-action" style="background:#28283a; color:white;" onclick="limpiarPedido()">Limpiar</button>
+            <button class="btn-action" style="background:#059669; color:white;" onclick="abrirModalCorte()">Ver Corte 📊</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal-corte">
         <div class="modal">
-            <div class="modal-header" style="display:flex; justify-content: space-between; align-items: center;"><h2>Historial del Día</h2><button onclick="cerrarModalCorte()" style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;">✖</button></div>
-            <div id="lbl-metricas" style="font-weight:bold; color:#a78bfa; margin-top:10px;"></div>
+            <div style="display:flex; justify-content:space-between"><h2>Historial</h2><button onclick="cerrarModalCorte()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer">✖</button></div>
+            <div id="lbl-metricas" style="margin-top:10px; color:#a78bfa"></div>
             <div class="historial-area" id="area-historial"></div>
-            <button class="btn-corte" onclick="hacerCorte()">Hacer corte del dia</button>
+            <button class="btn-action" style="background:#059669; color:white" onclick="hacerCorte()">CERRAR DÍA</button>
         </div>
     </div>
 
@@ -170,164 +160,105 @@
         const EXTRAS    = ["Queso rayado", "Cilantro", "Cebolla", "Crema", "Nopales", "Lechuga", "Frijoles"];
         const BEBIDAS   = ["Refresco  $27", "Jugo  $25"];
 
-        let state = {
-            selPlatillo: null, selGuisados: [], selSalsas: [], selExtras: [], selBebida: null, precBebida: 0,
-            itemsVenta: [], numVenta: 0, historial: []
-        };
+        let state = { selPlatillo: null, selGuisados: [], selSalsas: [], selExtras: [], selBebida: null, precBebida: 0, itemsVenta: [], numVenta: 0, historial: [] };
 
         function calcularPrecio(pl, gs) {
             const esH = pl === "Huarache"; const esT = pl === "Taco";
-            const esSimple = ["Sope", "Pambazo", "Gordita", "Quesadilla"].includes(pl);
             const camp = gs.includes("Campechano"); const bist = gs.includes("Bistec + quesillo");
-
-            if (esH) { if (camp) return 82; if (bist) return 72; return 65 + (gs.length * 5); }
-            if (esT) { if (camp) return 47; if (bist) return 42; return 22; }
+            if (esH) return camp ? 82 : bist ? 72 : 65 + (gs.length * 5);
+            if (esT) return camp ? 47 : bist ? 42 : 22;
             if (camp) return 42; if (bist) return 37;
-
-            let ex = esSimple ? gs.length : gs.filter(g => g !== "Chicharron").length;
-            if (ex <= 1) return 22;
-            return 22 + ((ex - 1) * 5);
+            return (gs.length <= 1) ? 22 : 22 + ((gs.length - 1) * 5);
         }
 
-        function onPlatillo(p) {
-            state.selPlatillo = (state.selPlatillo === p) ? null : p;
-            state.selGuisados = [];
-            state.selExtras = state.selExtras.filter(e => e !== "Frijoles");
-            
-            const hint = document.getElementById('hint-text');
-            if (state.selPlatillo === "Huarache") hint.innerText = "Base $65 + $5 c/guisado · Bistec=$72 · Campechano=$82";
-            else if (state.selPlatillo === "Taco") hint.innerText = "Sencillo (1 guisado) = $22 · Bistec=$42 · Campechano=$47";
-            else hint.innerText = "Sencillo (1 guisado) = $22 · Guisado extra = +$5 · Bistec+quesillo=$37 · Campechano=$42";
-            
-            actualizarUI();
-        }
+        function onPlatillo(p) { state.selPlatillo = (state.selPlatillo === p) ? null : p; state.selGuisados = []; actualizarUI(); }
 
         function onGuisado(g) {
             if (!state.selPlatillo) return;
             const esE = (g === "Campechano" || g === "Bistec + quesillo");
-            const hayE = state.selGuisados.some(x => x === "Campechano" || x === "Bistec + quesillo");
-
-            if (state.selGuisados.includes(g)) {
-                state.selGuisados = state.selGuisados.filter(x => x !== g);
-            } else {
-                if (hayE && !esE) return;
-                if (esE) state.selGuisados = [];
+            if (state.selGuisados.includes(g)) state.selGuisados = state.selGuisados.filter(x => x !== g);
+            else {
+                if (esE) state.selGuisados = [g];
                 else {
-                    let limite = (state.selPlatillo === "Huarache") ? 99 : (state.selPlatillo === "Taco" ? 1 : 2);
-                    if (state.selGuisados.length >= limite) return alert("Límite alcanzado.");
+                    let limit = (state.selPlatillo === "Huarache") ? 99 : (state.selPlatillo === "Taco" ? 1 : 2);
+                    if (state.selGuisados.length < limit) state.selGuisados.push(g);
                 }
-                state.selGuisados.push(g);
             }
             actualizarUI();
         }
 
-        function renderGrid(containerId, items, selCheckFunc, clickHandler, activeClass) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            items.forEach(item => {
-                if (item === "Frijoles" && state.selPlatillo !== "Tostada") return;
-                const btn = document.createElement('button');
-                btn.className = `btn ${selCheckFunc(item) ? activeClass : ''}`;
-                btn.innerText = item;
-                btn.onclick = () => clickHandler(item);
-                container.appendChild(btn);
+        function renderGrid(id, items, check, click, cls) {
+            const c = document.getElementById(id); c.innerHTML = '';
+            items.forEach(it => {
+                if (it === "Frijoles" && state.selPlatillo !== "Tostada") return;
+                const b = document.createElement('button'); b.className = `btn ${check(it) ? cls : ''}`;
+                b.innerText = it; b.onclick = () => click(it); c.appendChild(b);
             });
         }
 
         function actualizarUI() {
-            renderGrid('grid-platillos', PLATILLOS, (i) => state.selPlatillo === i, onPlatillo, 'active-pl');
-            renderGrid('grid-guisados', GUISADOS, (i) => state.selGuisados.includes(i), onGuisado, 'active-gs');
-            renderGrid('grid-salsas', SALSAS, (i) => state.selSalsas.includes(i), (s) => {
-                if (state.selSalsas.includes(s)) state.selSalsas = state.selSalsas.filter(x => x !== s);
-                else state.selSalsas.push(s); actualizarUI();
+            renderGrid('grid-platillos', PLATILLOS, i => state.selPlatillo === i, onPlatillo, 'active-pl');
+            renderGrid('grid-guisados', GUISADOS, i => state.selGuisados.includes(i), onGuisado, 'active-gs');
+            renderGrid('grid-salsas', SALSAS, i => state.selSalsas.includes(i), s => {
+                if (state.selSalsas.includes(s)) state.selSalsas = []; else state.selSalsas = [s]; actualizarUI();
             }, 'active-gs');
-            renderGrid('grid-extras', EXTRAS, (i) => state.selExtras.includes(i), (e) => {
-                if (state.selExtras.includes(e)) state.selExtras = state.selExtras.filter(x => x !== e);
-                else state.selExtras.push(e); actualizarUI();
+            renderGrid('grid-extras', EXTRAS, i => state.selExtras.includes(i), e => {
+                if (state.selExtras.includes(e)) state.selExtras = state.selExtras.filter(x => x !== e); else state.selExtras.push(e); actualizarUI();
             }, 'active-ex');
-            renderGrid('grid-bebidas', BEBIDAS, (i) => state.selBebida === i, (b) => {
+            renderGrid('grid-bebidas', BEBIDAS, i => state.selBebida === i, b => {
                 if (state.selBebida === b) { state.selBebida = null; state.precBebida = 0; }
-                else { state.selBebida = b; state.precBebida = b.includes("27") ? 27 : 25; }
-                actualizarUI();
+                else { state.selBebida = b; state.precBebida = b.includes("27") ? 27 : 25; } actualizarUI();
             }, 'active-bb');
 
-            const lbl = document.getElementById('lbl-precio');
-            if (!state.selPlatillo || state.selGuisados.length === 0) lbl.innerText = "—";
-            else lbl.innerText = `$${(calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida).toFixed(2)}`;
-        }
+            const h = document.getElementById('hint-text');
+            if (state.selPlatillo === "Huarache") h.innerText = "Base $65 + $5 c/guisado";
+            else if (state.selPlatillo === "Taco") h.innerText = "Sencillo (1 guisado) = $22";
+            else h.innerText = "Sencillo $22 · Guisado extra +$5";
 
-        function agregarTodosExtras() {
-            EXTRAS.forEach(ex => {
-                if (ex === "Frijoles" && state.selPlatillo !== "Tostada") return;
-                if (!state.selExtras.includes(ex)) state.selExtras.push(ex);
-            });
-            actualizarUI();
+            const lbl = document.getElementById('lbl-precio');
+            if (!state.selPlatillo && !state.selBebida) lbl.innerText = "—";
+            else lbl.innerText = `$${((state.selPlatillo ? calcularPrecio(state.selPlatillo, state.selGuisados) : 0) + state.precBebida).toFixed(2)}`;
         }
 
         function agregarItem() {
-            if (!state.selPlatillo || state.selGuisados.length === 0) return alert("Selecciona platillo y guisado.");
-            let desc = [state.selGuisados.join(" + ")];
-            if (state.selSalsas.length > 0) desc.push("Salsa: " + state.selSalsas.join(" y "));
-            if (state.selExtras.length > 0) desc.push(state.selExtras.join(", "));
-            if (state.selBebida) desc.push(state.selBebida);
-            
-            state.itemsVenta.push({ 
-                nombre: state.selPlatillo, 
-                desc: desc.join(" · "), 
-                precio: calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida 
-            });
-            limpiarSeleccionActual();
-            renderSidebar();
-        }
-
-        function limpiarSeleccionActual() {
+            if (!state.selPlatillo && !state.selBebida) return;
+            let p = state.selPlatillo ? calcularPrecio(state.selPlatillo, state.selGuisados) : 0;
+            state.itemsVenta.push({ nombre: state.selPlatillo || "Bebida", desc: state.selGuisados.join("+") || state.selBebida, precio: p + state.precBebida });
             state.selPlatillo = null; state.selGuisados = []; state.selSalsas = []; state.selExtras = []; state.selBebida = null; state.precBebida = 0;
-            actualizarUI();
-        }
-
-        function limpiarPedido() {
-            if (confirm("¿Limpiar pedido actual?")) { state.itemsVenta = []; renderSidebar(); }
+            actualizarUI(); renderSidebar();
         }
 
         function renderSidebar() {
-            const container = document.getElementById('sidebar-resumen');
-            container.innerHTML = ''; let total = 0;
+            const c = document.getElementById('sidebar-resumen'); c.innerHTML = ''; let t = 0;
             state.itemsVenta.forEach((it, idx) => {
-                total += it.precio;
-                const div = document.createElement('div'); div.className = 'cart-item';
-                div.innerHTML = `<div class="cart-item-details"><span class="cart-item-title">${it.nombre}</span><span class="cart-item-desc">${it.desc}</span></div>
-                                 <div style="text-align:right"><span class="cart-item-price">$${it.precio.toFixed(2)}</span><br><button class="btn-del" onclick="state.itemsVenta.splice(${idx},1);renderSidebar()">✖</button></div>`;
-                container.appendChild(div);
+                t += it.precio;
+                const d = document.createElement('div'); d.className = 'cart-item';
+                d.innerHTML = `<div><b>${it.nombre}</b><br><small>${it.desc}</small></div>
+                               <div style="text-align:right"><b>$${it.precio}</b><br><button class="btn-del" onclick="state.itemsVenta.splice(${idx},1);renderSidebar()">✖</button></div>`;
+                c.appendChild(d);
             });
-            document.getElementById('lbl-side-total').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('lbl-side-total').innerText = `$${t.toFixed(2)}`;
             document.getElementById('lbl-side-count').innerText = state.itemsVenta.length + " productos";
-            // Auto-scroll al último item agregado
-            container.scrollTop = container.scrollHeight;
+            c.scrollTop = c.scrollHeight;
         }
 
         function guardarVenta() {
-            if (state.itemsVenta.length === 0) return;
+            if (!state.itemsVenta.length) return;
             state.numVenta++;
-            let totalVenta = state.itemsVenta.reduce((a, b) => a + b.precio, 0);
-            let texto = `---- Cliente #${state.numVenta}  ---  $${totalVenta.toFixed(2)}\n`;
-            state.itemsVenta.forEach(i => texto += ` * ${i.nombre}: $${i.precio.toFixed(2)}\n`);
-            state.historial.push({ texto, total: totalVenta });
-            state.itemsVenta = []; renderSidebar();
-            alert("Venta #" + state.numVenta + " guardada.");
+            let total = state.itemsVenta.reduce((a, b) => a + b.precio, 0);
+            state.historial.push({ texto: `Venta #${state.numVenta}: $${total}\n` + state.itemsVenta.map(i => ` - ${i.nombre}: $${i.precio}`).join("\n"), total });
+            state.itemsVenta = []; renderSidebar(); alert("Venta Guardada");
         }
 
         function abrirModalCorte() {
             document.getElementById('modal-corte').style.display = 'flex';
-            let totalDia = state.historial.reduce((a, b) => a + b.total, 0);
-            document.getElementById('lbl-metricas').innerText = `Ventas: ${state.historial.length} | Total acumulado: $${totalDia.toFixed(2)}`;
-            document.getElementById('area-historial').innerText = state.historial.length ? state.historial.map(h => h.texto).reverse().join("\n") : "Sin ventas aún.";
+            let t = state.historial.reduce((a, b) => a + b.total, 0);
+            document.getElementById('lbl-metricas').innerText = `Total del día: $${t.toFixed(2)}`;
+            document.getElementById('area-historial').innerText = state.historial.map(h => h.texto).join("\n\n");
         }
-
         function cerrarModalCorte() { document.getElementById('modal-corte').style.display = 'none'; }
-        
-        function hacerCorte() {
-            if (confirm("¿Cerrar caja y borrar historial del día?")) { state.historial = []; state.numVenta = 0; cerrarModalCorte(); }
-        }
+        function hacerCorte() { if (confirm("¿Limpiar todo?")) { state.historial = []; state.numVenta = 0; cerrarModalCorte(); } }
+        function agregarTodosExtras() { EXTRAS.forEach(e => { if (e === "Frijoles" && state.selPlatillo !== "Tostada") return; if (!state.selExtras.includes(e)) state.selExtras.push(e); }); actualizarUI(); }
 
         actualizarUI();
     </script>
