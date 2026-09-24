@@ -108,7 +108,7 @@
   <div class="section"><div class="section-title">5. BEBIDA</div><div class="btn-grid" id="grid-bebidas"></div></div>
 
   <div class="bottom-bar">
-    <div class="price-box"><div class="price-label">Precio Unitario</div><div class="price-value" id="lbl-precio">—</div></div>
+    <div class="price-box"><div class="price-label">Precio</div><div class="price-value" id="lbl-precio">—</div></div>
 
     <div class="qty-box">
       <button class="btn-qty" onclick="cambiarCantidad(-1)">-</button>
@@ -127,7 +127,7 @@
     <div class="total-row"><span style="color: var(--text-mut); font-size: 13px;">Total a cobrar</span><span class="total-val" id="lbl-side-total">$0.00</span></div>
     <button class="btn-save" onclick="guardarVenta()">Cobrar y Guardar ></button>
     <button class="btn-clear" onclick="limpiarPedido()">Limpiar pedido</button>
-    <button class="btn-corte" onclick="abrirModalCorte()">Ver Corte del Día 📊</button>
+    <button class="btn-corte" onclick="abrirModalCorte()">Corte del Día </button>
   </div>
 </div>
 
@@ -143,55 +143,68 @@
 <script>
   const PLATILLOS = ["Quesadilla", "Sope", "Gordita", "Gordita de puro guisado", "Pambazo", "Tostada", "Flautas (3pz)", "Taco", "Huarache"];
 
+  // "Frijoles" vive únicamente en EXTRAS (sin duplicado en guisados)
   const GUISADOS = [
     "Bistec", "Longaniza", "Campechano",
-    "Quesillo / Oaxaca", "Tinga de pollo", "Tinga de res", "Champiñones",
+    "Queso Oaxaca", "Tinga de pollo", "Tinga de res", "Champiñones",
     "Pancita", "Picadillo", "Flor de calabaza", "Huitlacoche", "Requesón",
     "Chicharrón", "Pata", "Papa con longaniza"
   ];
 
   const SALSAS  = ["Salsa verde", "Salsa roja"];
-  const EXTRAS  = ["Lechuga", "Queso", "Quesillo", "Cilantro", "Cebolla", "Nopales", "Crema", "Frijoles"];
+  const EXTRAS  = ["Lechuga", "Queso", "Cilantro", "Cebolla", "Nopales", "Crema", "Frijoles"];
   const BEBIDAS = ["Coca-Cola 500ml $27", "Boing 500ml $25"];
+
+  // Relleno "sencillo" que se cobra al precio base ($22)
+  const BASE_SENCILLO = { "Gordita": "Chicharrón", "Sope": "Frijoles" };
+  const ESPECIALES = ["Bistec", "Longaniza", "Campechano"];
 
   let state = {
     selPlatillo: null, selGuisados: [], selSalsas: [], selExtras: [], selBebida: null, precBebida: 0,
     itemsVenta: [], numVenta: 0, historial: [], cantidadActual: 1
   };
 
-  function calcularPrecio(pl, gs) {
+  // Rellenos efectivos: guisados + (Sope) frijoles marcados en extras
+  function rellenosDe(pl, gs, ex) {
+    const r = [...gs];
+    if (pl === "Sope" && ex.includes("Frijoles")) r.push("Frijoles");
+    return r;
+  }
+
+  function tieneRelleno(pl, gs, ex) {
+    return pl === "Flautas (3pz)" || rellenosDe(pl, gs, ex).length > 0;
+  }
+
+  function calcularPrecio(pl, gs, ex = []) {
     if (!pl) return 0;
 
-    let esCampechano = gs.includes("Campechano");
-    let esBistec = gs.includes("Bistec");
-    let esLonganiza = gs.includes("Longaniza");
-    let esCarne = esBistec || esLonganiza;
-
-    let guisadosNormales = gs.filter(g => !["Bistec", "Longaniza", "Campechano"].includes(g)).length;
+    const esCampechano = gs.includes("Campechano");
+    const esCarne = gs.includes("Bistec") || gs.includes("Longaniza");
+    const guisadosNormales = gs.filter(g => !ESPECIALES.includes(g)).length;
 
     if (pl === "Flautas (3pz)") return 50;
+    // Precio base con 1 guisado + $5 por cada guisado adicional
+    const extraPorGuisado = Math.max(gs.length - 1, 0) * 5;
 
-    if (pl === "Taco") {
-      if (esCampechano) return 47;
-      if (esCarne) return 42;
-      return 42;
-    }
-
-    if (pl === "Huarache") {
-      if (esCampechano) return 82;
-      if (esCarne) return 72;
-      return 72;
-    }
-
-    if (pl === "Gordita de puro guisado") return 27;
+    if (pl === "Taco") return (esCampechano ? 47 : 42) + extraPorGuisado;
+    if (pl === "Huarache") return (esCampechano ? 82 : 72) + extraPorGuisado;
+    if (pl === "Gordita de puro guisado") return 27 + extraPorGuisado;
 
     if (["Quesadilla", "Sope", "Gordita", "Pambazo"].includes(pl)) {
       if (esCampechano) return 42;
       if (esCarne) return 37;
     }
 
+    // Gordita / Sope: base $22, +$5 por cada relleno distinto al sencillo
+    const base = BASE_SENCILLO[pl];
+    if (base) {
+      const cobrables = rellenosDe(pl, gs, ex)
+              .filter(g => !ESPECIALES.includes(g) && g !== base).length;
+      return 22 + cobrables * 5;
+    }
+
     if (guisadosNormales <= 1) return 22;
-    return 22 + ((guisadosNormales - 1) * 5);
+    return 22 + (guisadosNormales - 1) * 5;
   }
 
   function cambiarCantidad(delta) {
@@ -207,12 +220,16 @@
 
     const hint = document.getElementById('hint-text');
 
-    if (state.selPlatillo === "Quesadilla" || state.selPlatillo === "Sope") {
+    if (state.selPlatillo === "Quesadilla") {
       state.selExtras = ["Lechuga", "Queso"];
-      hint.innerText = "$22 (1 guisado), +$5 extra. Especiales (Bistec/Longaniza) $37, Campechano $42 (Incluyen quesillo).";
+      hint.innerText = "$22 (1 guisado), +$5 extra. Especiales (Bistec/Longaniza) $37, Campechano $42 (Incluyen queso).";
+    } else if (state.selPlatillo === "Sope") {
+      state.selExtras = ["Lechuga", "Queso"];
+      hint.innerText = "Sencillo (Frijoles en Extras) $22. Cada guisado distinto +$5 (queso = $27). Bistec/Longaniza $37, Campechano $42.";
     } else if (state.selPlatillo === "Gordita") {
       state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
-      hint.innerText = "$22 (1 guisado), +$5 extra. Especiales $37, Campechano $42.";
+      state.selGuisados = ["Chicharrón"];
+      hint.innerText = "Sencilla (solo Chicharrón) $22. Cualquier otro guisado +$5 (queso = $27). Especiales $37, Campechano $42.";
     } else if (state.selPlatillo === "Gordita de puro guisado") {
       state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
       hint.innerText = "$27. Regla: SIN chicharrón.";
@@ -227,10 +244,10 @@
       state.selExtras = ["Lechuga", "Queso", "Crema"];
       hint.innerText = "$50 (3 piezas). Elegir relleno (Ej. Tinga de pollo o res).";
     } else if (state.selPlatillo === "Taco") {
-      state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Quesillo", "Queso"];
+      state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
       hint.innerText = "Taco Bistec/Longaniza $42, Campechano $47.";
     } else if (state.selPlatillo === "Huarache") {
-      state.selExtras = ["Frijoles", "Quesillo", "Cilantro", "Cebolla", "Nopales", "Queso"];
+      state.selExtras = ["Frijoles", "Cilantro", "Cebolla", "Nopales", "Queso"];
       hint.innerText = "Huarache Bistec/Longaniza $72, Campechano $82.";
     } else {
       hint.innerText = "Selecciona un platillo para ver sus reglas y precios.";
@@ -248,12 +265,11 @@
 
     if (state.selGuisados.includes(g)) {
       state.selGuisados = state.selGuisados.filter(x => x !== g);
-      if (["Bistec", "Longaniza", "Campechano"].includes(g) && !["Taco", "Huarache"].includes(state.selPlatillo)) {
-        state.selExtras = state.selExtras.filter(e => e !== "Quesillo");
-      }
     } else {
-      if (["Bistec", "Longaniza", "Campechano"].includes(g) && ["Quesadilla", "Sope", "Gordita", "Pambazo"].includes(state.selPlatillo)) {
-        if (!state.selExtras.includes("Quesillo")) state.selExtras.push("Quesillo");
+      // Los especiales incluyen queso. No se quita al deseleccionar,
+      // porque puede ser el queso base del platillo.
+      if (ESPECIALES.includes(g) && ["Quesadilla", "Sope", "Gordita", "Pambazo"].includes(state.selPlatillo)) {
+        if (!state.selExtras.includes("Queso")) state.selExtras.push("Queso");
       }
       state.selGuisados.push(g);
     }
@@ -267,9 +283,9 @@
       const btn = document.createElement('button');
       btn.className = `btn ${selCheckFunc(item) ? activeClass : ''}`;
 
-      if(["Bistec", "Longaniza", "Campechano"].includes(item) && containerId === 'grid-guisados'){
+      if (ESPECIALES.includes(item) && containerId === 'grid-guisados') {
         btn.style.border = "1px solid #f43f5e";
-        if(!selCheckFunc(item)) btn.style.color = "#fda4af";
+        if (!selCheckFunc(item)) btn.style.color = "#fda4af";
       }
 
       btn.innerText = item;
@@ -283,11 +299,13 @@
     renderGrid('grid-guisados', GUISADOS, (i) => state.selGuisados.includes(i), onGuisado, 'active-gs');
     renderGrid('grid-salsas', SALSAS, (i) => state.selSalsas.includes(i), (s) => {
       if (state.selSalsas.includes(s)) state.selSalsas = state.selSalsas.filter(x => x !== s);
-      else state.selSalsas.push(s); actualizarUI();
+      else state.selSalsas.push(s);
+      actualizarUI();
     }, 'active-gs');
     renderGrid('grid-extras', EXTRAS, (i) => state.selExtras.includes(i), (e) => {
       if (state.selExtras.includes(e)) state.selExtras = state.selExtras.filter(x => x !== e);
-      else state.selExtras.push(e); actualizarUI();
+      else state.selExtras.push(e);
+      actualizarUI();
     }, 'active-ex');
     renderGrid('grid-bebidas', BEBIDAS, (i) => state.selBebida === i, (b) => {
       if (state.selBebida === b) { state.selBebida = null; state.precBebida = 0; }
@@ -296,10 +314,10 @@
     }, 'active-bb');
 
     const lbl = document.getElementById('lbl-precio');
-    if (!state.selPlatillo || (state.selGuisados.length === 0 && state.selPlatillo !== "Flautas (3pz)")) {
+    if (!state.selPlatillo || !tieneRelleno(state.selPlatillo, state.selGuisados, state.selExtras)) {
       lbl.innerText = "—";
     } else {
-      lbl.innerText = `$${(calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida).toFixed(2)}`;
+      lbl.innerText = `$${(calcularPrecio(state.selPlatillo, state.selGuisados, state.selExtras) + state.precBebida).toFixed(2)}`;
     }
   }
 
@@ -312,14 +330,15 @@
 
   function agregarItem() {
     if (!state.selPlatillo) return alert("Selecciona un platillo.");
-    if (state.selGuisados.length === 0 && state.selPlatillo !== "Flautas (3pz)") return alert("Selecciona al menos un guisado o relleno.");
+    if (!tieneRelleno(state.selPlatillo, state.selGuisados, state.selExtras))
+      return alert("Selecciona al menos un guisado o relleno.");
 
     let desc = [state.selGuisados.join(" + ")];
     if (state.selSalsas.length > 0) desc.push("Salsa: " + state.selSalsas.join(" y "));
     if (state.selExtras.length > 0) desc.push(state.selExtras.join(", "));
     if (state.selBebida) desc.push(state.selBebida);
 
-    let precioBase = calcularPrecio(state.selPlatillo, state.selGuisados) + state.precBebida;
+    let precioBase = calcularPrecio(state.selPlatillo, state.selGuisados, state.selExtras) + state.precBebida;
 
     state.itemsVenta.push({
       nombre: `${state.cantidadActual}x ${state.selPlatillo}`,
