@@ -77,6 +77,16 @@
     .btn-clear { background: #28283a; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-bottom: 8px;}
     .btn-corte { background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold;}
 
+    /* Cuentas abiertas */
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; max-height: 110px; overflow-y: auto; }
+    .tab { background: var(--btn-bg); color: var(--btn-fg); border: 1px solid var(--btn-bor); border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+    .tab small { font-size: 11px; opacity: 0.85; }
+    .tab:hover { background: #2d2d3f; }
+    .tab.active { background: var(--accent-ind); color: white; border-color: #fda4af; font-weight: bold; }
+    .btn-mini { background: #28283a; color: white; border: 1px solid var(--btn-bor); border-radius: 4px; padding: 5px 8px; font-size: 11px; cursor: pointer; }
+    .btn-mini:hover { background: #373750; }
+    .btn-mini.danger { color: #f87171; }
+
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
     .modal { background: var(--bg2); border: 1px solid var(--border-def); width: 600px; max-width: 100%; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; max-height: 90vh; }
     .historial-area { background: var(--bg); border: 1px solid var(--border-def); padding: 15px; border-radius: 4px; color: var(--text-pri); font-family: monospace; white-space: pre-wrap; overflow-y: auto; flex: 1; font-size: 13px; margin: 10px 0;}
@@ -121,7 +131,20 @@
 </div>
 
 <div class="sidebar">
-  <div class="sb-header"><h3 style="font-size: 16px;">Pedido actual</h3><div class="hint" id="lbl-side-count" style="margin: 0; background:none; border:none; padding:0; color:var(--text-mut)">Sin productos</div></div>
+  <div class="sb-header">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size: 16px;">Cuentas abiertas</h3>
+      <button class="btn-mini" onclick="nuevaCuenta()">+ Nueva cuenta</button>
+    </div>
+    <div class="tabs" id="tabs-cuentas"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <div class="hint" id="lbl-side-count" style="margin: 0; background:none; border:none; padding:0; color:var(--text-mut)">Sin productos</div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn-mini" onclick="renombrarCuenta()">✎ Renombrar</button>
+        <button class="btn-mini danger" onclick="eliminarCuenta()" title="Eliminar cuenta">✖</button>
+      </div>
+    </div>
+  </div>
   <div class="sb-body" id="sidebar-resumen"></div>
   <div class="sb-footer">
     <div class="total-row"><span style="color: var(--text-mut); font-size: 13px;">Total a cobrar</span><span class="total-val" id="lbl-side-total">$0.00</span></div>
@@ -134,7 +157,7 @@
 <div class="modal-overlay" id="modal-corte">
   <div class="modal">
     <div class="modal-header" style="display:flex; justify-content: space-between; align-items: center;"><h2>Historial del Día</h2><button onclick="cerrarModalCorte()" style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;">✖</button></div>
-    <div id="lbl-metricas" style="font-weight:bold; color:#4ade80; margin-top:10px;"></div>
+    <div id="lbl-metricas" style="font-weight:bold; color:#4ade80; margin-top:10px; white-space:pre-line;"></div>
     <div class="historial-area" id="area-historial"></div>
     <button class="btn-corte" onclick="hacerCorte()">Hacer corte del dia</button>
   </div>
@@ -161,7 +184,8 @@
 
   let state = {
     selPlatillo: null, selGuisados: [], selSalsas: [], selExtras: [], selBebida: null, precBebida: 0,
-    itemsVenta: [], numVenta: 0, historial: [], cantidadActual: 1
+    cuentas: [], cuentaActivaId: null, contadorCuentas: 0,
+    numVenta: 0, historial: [], cantidadActual: 1
   };
 
   // Rellenos efectivos: guisados + (Sope) frijoles marcados en extras
@@ -340,7 +364,7 @@
 
     let precioBase = calcularPrecio(state.selPlatillo, state.selGuisados, state.selExtras) + state.precBebida;
 
-    state.itemsVenta.push({
+    cuentaActual().items.push({
       nombre: `${state.cantidadActual}x ${state.selPlatillo}`,
       desc: desc.filter(d => d !== "").join(" · "),
       precio: precioBase * state.cantidadActual
@@ -363,50 +387,122 @@
     actualizarUI();
   }
 
+  /* ---------- Cuentas abiertas ---------- */
+  function totalCuenta(c) { return c.items.reduce((a, b) => a + b.precio, 0); }
+  function cuentaActual() { return state.cuentas.find(c => c.id === state.cuentaActivaId); }
+
+  function nuevaCuenta() {
+    state.contadorCuentas++;
+    const c = { id: state.contadorCuentas, nombre: `Cliente ${state.contadorCuentas}`, items: [] };
+    state.cuentas.push(c);
+    state.cuentaActivaId = c.id;
+    renderSidebar();
+  }
+
+  function cambiarCuenta(id) {
+    state.cuentaActivaId = id;
+    renderSidebar();
+  }
+
+  function renombrarCuenta() {
+    const c = cuentaActual();
+    const n = prompt("Nombre de la cuenta (ej. Mesa 2, Juan):", c.nombre);
+    if (n && n.trim()) { c.nombre = n.trim(); renderSidebar(); }
+  }
+
+  function eliminarCuenta() {
+    const c = cuentaActual();
+    if (c.items.length && !confirm(`¿Eliminar "${c.nombre}" y sus ${c.items.length} renglones sin cobrar?`)) return;
+    state.cuentas = state.cuentas.filter(x => x.id !== c.id);
+    if (state.cuentas.length === 0) return nuevaCuenta();
+    state.cuentaActivaId = state.cuentas[state.cuentas.length - 1].id;
+    renderSidebar();
+  }
+
+  function eliminarItem(idx) {
+    cuentaActual().items.splice(idx, 1);
+    renderSidebar();
+  }
+
   function limpiarPedido() {
-    if (confirm("¿Borrar todo el pedido actual?")) { state.itemsVenta = []; renderSidebar(); }
+    const c = cuentaActual();
+    if (!c.items.length) return;
+    if (confirm(`¿Borrar los renglones de "${c.nombre}"?`)) { c.items = []; renderSidebar(); }
   }
 
   function renderSidebar() {
+    // Pestañas de cuentas abiertas
+    const tabs = document.getElementById('tabs-cuentas');
+    tabs.innerHTML = '';
+    state.cuentas.forEach(cta => {
+      const t = document.createElement('button');
+      t.className = 'tab' + (cta.id === state.cuentaActivaId ? ' active' : '');
+      const n = document.createElement('span'); n.textContent = cta.nombre;
+      const s = document.createElement('small');
+      s.textContent = cta.items.length ? `$${totalCuenta(cta).toFixed(2)}` : 'vacía';
+      t.append(n, s);
+      t.onclick = () => cambiarCuenta(cta.id);
+      tabs.appendChild(t);
+    });
+
+    // Renglones de la cuenta activa
+    const c = cuentaActual();
     const container = document.getElementById('sidebar-resumen');
-    container.innerHTML = ''; let total = 0;
-    state.itemsVenta.forEach((it, idx) => {
-      total += it.precio;
+    container.innerHTML = '';
+    c.items.forEach((it, idx) => {
       const div = document.createElement('div'); div.className = 'cart-item';
       div.innerHTML = `<div class="cart-item-details"><span class="cart-item-title">${it.nombre}</span><span class="cart-item-desc">${it.desc}</span></div>
-                       <div style="text-align:right"><span class="cart-item-price">$${it.precio.toFixed(2)}</span><br><button class="btn-del" onclick="state.itemsVenta.splice(${idx},1);renderSidebar()">✖</button></div>`;
+                       <div style="text-align:right"><span class="cart-item-price">$${it.precio.toFixed(2)}</span><br><button class="btn-del" onclick="eliminarItem(${idx})">✖</button></div>`;
       container.appendChild(div);
     });
-    document.getElementById('lbl-side-total').innerText = `$${total.toFixed(2)}`;
-    document.getElementById('lbl-side-count').innerText = state.itemsVenta.length + " renglones en caja";
+    document.getElementById('lbl-side-total').innerText = `$${totalCuenta(c).toFixed(2)}`;
+    document.getElementById('lbl-side-count').innerText = `${c.nombre} · ${c.items.length} renglones`;
     container.scrollTop = container.scrollHeight;
   }
 
   function guardarVenta() {
-    if (state.itemsVenta.length === 0) return;
+    const c = cuentaActual();
+    if (!c || c.items.length === 0) return;
     state.numVenta++;
-    let totalVenta = state.itemsVenta.reduce((a, b) => a + b.precio, 0);
-    let texto = `---- Cliente #${state.numVenta}  ---  $${totalVenta.toFixed(2)}\n`;
-    state.itemsVenta.forEach(i => texto += ` * ${i.nombre}: $${i.precio.toFixed(2)}\n   └ ${i.desc}\n`);
+    const totalVenta = totalCuenta(c);
+    let texto = `---- Venta #${state.numVenta} · ${c.nombre}  ---  $${totalVenta.toFixed(2)}\n`;
+    c.items.forEach(i => texto += ` * ${i.nombre}: $${i.precio.toFixed(2)}\n   └ ${i.desc}\n`);
     state.historial.push({ texto, total: totalVenta });
-    state.itemsVenta = []; renderSidebar();
+
+    // Se cierra solo la cuenta cobrada; las demás siguen abiertas
+    state.cuentas = state.cuentas.filter(x => x.id !== c.id);
+    if (state.cuentas.length === 0) return nuevaCuenta();
+    state.cuentaActivaId = state.cuentas[0].id;
+    renderSidebar();
   }
 
   function abrirModalCorte() {
     document.getElementById('modal-corte').style.display = 'flex';
-    let totalDia = state.historial.reduce((a, b) => a + b.total, 0);
-    document.getElementById('lbl-metricas').innerText = `Ventas cobradas: ${state.historial.length} | Total acumulado: $${totalDia.toFixed(2)}`;
+    const totalDia = state.historial.reduce((a, b) => a + b.total, 0);
+    const abiertas = state.cuentas.filter(c => c.items.length > 0);
+    let m = `Ventas cobradas: ${state.historial.length} | Total acumulado: $${totalDia.toFixed(2)}`;
+    if (abiertas.length) {
+      const pend = abiertas.reduce((a, c) => a + totalCuenta(c), 0);
+      m += `\nCuentas abiertas sin cobrar: ${abiertas.length} ($${pend.toFixed(2)}), no incluidas en el total`;
+    }
+    document.getElementById('lbl-metricas').innerText = m;
     document.getElementById('area-historial').innerText = state.historial.length ? state.historial.map(h => h.texto).reverse().join("\n") : "La caja está en $0.00. Sin ventas aún.";
   }
 
   function cerrarModalCorte() { document.getElementById('modal-corte').style.display = 'none'; }
 
   function hacerCorte() {
-    if (confirm("¿Cerrar caja y borrar el historial del día? Esto no se puede deshacer.")) {
+    const abiertas = state.cuentas.filter(c => c.items.length > 0);
+    let msg = "¿Cerrar caja y borrar el historial del día? Esto no se puede deshacer.";
+    if (abiertas.length) {
+      msg += `\n\nHay ${abiertas.length} cuenta(s) abierta(s) sin cobrar (${abiertas.map(c => c.nombre).join(", ")}). No entran en el corte y se conservan abiertas.`;
+    }
+    if (confirm(msg)) {
       state.historial = []; state.numVenta = 0; cerrarModalCorte();
     }
   }
 
+  nuevaCuenta();
   actualizarUI();
 </script>
 </body>
