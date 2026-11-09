@@ -178,7 +178,7 @@
   const EXTRAS  = ["Lechuga", "Queso", "Cilantro", "Cebolla", "Nopales", "Crema", "Frijoles"];
   const BEBIDAS = ["Coca-Cola 500ml $27", "Boing 500ml $25"];
 
-  // Relleno "sencillo" que se cobra al precio base ($22)
+  // Relleno "sencillo" que se cobra al precio base ($25)
   const BASE_SENCILLO = { "Gordita": "Chicharrón", "Sope": "Frijoles" };
   const ESPECIALES = ["Bistec", "Longaniza", "Campechano"];
 
@@ -206,29 +206,29 @@
     const esCarne = gs.includes("Bistec") || gs.includes("Longaniza");
     const guisadosNormales = gs.filter(g => !ESPECIALES.includes(g)).length;
 
-    if (pl === "Flautas (3pz)") return 50;
+    if (pl === "Flautas (3pz)") return 55;
     // Precio base con 1 guisado + $5 por cada guisado adicional
     const extraPorGuisado = Math.max(gs.length - 1, 0) * 5;
 
-    if (pl === "Taco") return (esCampechano ? 47 : 42) + extraPorGuisado;
-    if (pl === "Huarache") return (esCampechano ? 82 : 72) + extraPorGuisado;
-    if (pl === "Gordita de puro guisado") return 27 + extraPorGuisado;
+    if (pl === "Taco") return (esCampechano ? 50 : 45) + extraPorGuisado;
+    if (pl === "Huarache") return (esCampechano ? 85 : 75) + extraPorGuisado;
+    if (pl === "Gordita de puro guisado") return 30 + extraPorGuisado;
 
     if (["Quesadilla", "Sope", "Gordita", "Pambazo"].includes(pl)) {
-      if (esCampechano) return 42;
-      if (esCarne) return 37;
+      if (esCampechano) return 45;
+      if (esCarne) return 40;
     }
 
-    // Gordita / Sope: base $22, +$5 por cada relleno distinto al sencillo
+    // Gordita / Sope: base $25, +$5 por cada relleno distinto al sencillo
     const base = BASE_SENCILLO[pl];
     if (base) {
       const cobrables = rellenosDe(pl, gs, ex)
-              .filter(g => !ESPECIALES.includes(g) && g !== base).length;
-      return 22 + cobrables * 5;
+        .filter(g => !ESPECIALES.includes(g) && g !== base).length;
+      return 25 + cobrables * 5;
     }
 
-    if (guisadosNormales <= 1) return 22;
-    return 22 + (guisadosNormales - 1) * 5;
+    if (guisadosNormales <= 1) return 25;
+    return 25 + (guisadosNormales - 1) * 5;
   }
 
   function cambiarCantidad(delta) {
@@ -246,33 +246,33 @@
 
     if (state.selPlatillo === "Quesadilla") {
       state.selExtras = ["Lechuga", "Queso"];
-      hint.innerText = "$22 (1 guisado), +$5 extra. Especiales (Bistec/Longaniza) $37, Campechano $42 (Incluyen queso).";
+      hint.innerText = "$25 (1 guisado), +$5 extra. Especiales (Bistec/Longaniza) $40, Campechano $45 (Incluyen queso).";
     } else if (state.selPlatillo === "Sope") {
       state.selExtras = ["Lechuga", "Queso"];
-      hint.innerText = "Sencillo (Frijoles en Extras) $22. Cada guisado distinto +$5 (queso = $27). Bistec/Longaniza $37, Campechano $42.";
+      hint.innerText = "Sencillo (Frijoles en Extras) $25. Cada guisado distinto +$5 (queso = $30). Bistec/Longaniza $40, Campechano $45.";
     } else if (state.selPlatillo === "Gordita") {
       state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
       state.selGuisados = ["Chicharrón"];
-      hint.innerText = "Sencilla (solo Chicharrón) $22. Cualquier otro guisado +$5 (queso = $27). Especiales $37, Campechano $42.";
+      hint.innerText = "Sencilla (solo Chicharrón) $25. Cualquier otro guisado +$5 (queso = $30). Especiales $40, Campechano $45.";
     } else if (state.selPlatillo === "Gordita de puro guisado") {
       state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
-      hint.innerText = "$27. Regla: SIN chicharrón.";
+      hint.innerText = "$30. Regla: SIN chicharrón.";
     } else if (state.selPlatillo === "Pambazo") {
       state.selExtras = ["Lechuga", "Queso", "Crema"];
       state.selGuisados = ["Papa con longaniza"];
-      hint.innerText = "$22 (Base), +$5 extra. Especiales $37, Campechano $42.";
+      hint.innerText = "$25 (Base), +$5 extra. Especiales $40, Campechano $45.";
     } else if (state.selPlatillo === "Tostada") {
       state.selExtras = ["Frijoles", "Crema", "Queso", "Lechuga"];
-      hint.innerText = "$22 (1 guisado), +$5 extra.";
+      hint.innerText = "$25 (1 guisado), +$5 extra.";
     } else if (state.selPlatillo === "Flautas (3pz)") {
       state.selExtras = ["Lechuga", "Queso", "Crema"];
-      hint.innerText = "$50 (3 piezas). Elegir relleno (Ej. Tinga de pollo o res).";
+      hint.innerText = "$55 (3 piezas). Elegir relleno (Ej. Tinga de pollo o res).";
     } else if (state.selPlatillo === "Taco") {
       state.selExtras = ["Cilantro", "Cebolla", "Nopales", "Queso"];
-      hint.innerText = "Taco Bistec/Longaniza $42, Campechano $47.";
+      hint.innerText = "Taco Bistec/Longaniza $45, Campechano $50.";
     } else if (state.selPlatillo === "Huarache") {
       state.selExtras = ["Frijoles", "Cilantro", "Cebolla", "Nopales", "Queso"];
-      hint.innerText = "Huarache Bistec/Longaniza $72, Campechano $82.";
+      hint.innerText = "Huarache Bistec/Longaniza $75, Campechano $85.";
     } else {
       hint.innerText = "Selecciona un platillo para ver sus reglas y precios.";
     }
